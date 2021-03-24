@@ -942,8 +942,8 @@ def robot_abs_pos_to_relative(color, coords):
 
 def centers_of_boxes():
     res = []
-    for x in range(Data.borders[0], Data.borders[2]):
-        for y in range(Data.borders[1], Data.borders[3]):
+    for x in range(Data.borders[0], Data.borders[2] + 1):
+        for y in range(Data.borders[1], Data.borders[3] + 1):
             if Data.field[x][y] == Data.field[x][y + 1] == Data.field[x + 1][y] == Data.field[x + 1][y + 1] == 1:
                 res.append((x, y))
     return res

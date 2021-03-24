@@ -963,6 +963,20 @@ def detect_color(image: np.ndarray, search_area):
         return True, right_type
 
 
+def get_near_points_from_centers(centers: list) -> list:
+    res = set()
+    for c in centers:
+        centerX, centerY = c
+
+        res.add((0, centerX + 2, centerY))
+        res.add((1, centerX, centerY - 2))
+        res.add((2, centerX - 2, centerY))
+        res.add((3, centerX, centerY + 2))
+    return list(res)
+
+
+
+
 def find_way_outs():
     posX, posY = Data.robot_pos
     direction = get_orientation()

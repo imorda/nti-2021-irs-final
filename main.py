@@ -367,11 +367,14 @@ def rotate_gyro_absolute(angle):
                  abs(-angle - getYaw()) < RobotConst.rotate_decel_start_offset):
             motors(RobotConst.vslow * sgn, RobotConst.vslow * -sgn)
         else:
-            motors(RobotConst.v * sgn, RobotConst.v * -sgn)
+            motors((RobotConst.v / 3 * 2) * sgn, (RobotConst.v / 3 * 2) * -sgn)
         sleep(1)
         if Data.finish:
             exit(1)
     motors(0)
+    if abs(eL() - Data.encL) > 2 * math.pi or abs(eL() - Data.encL) > 2 * math.pi:
+        Data.encL = eL()
+        Data.encR = eR()
     log('Rotate', angle, 'done!')
 
 
@@ -828,70 +831,134 @@ def main():
     Data.cur_angle = (get_orientation_exact() - 1) * 90000
     rotate_gyro_relative(0)
 
-    # log('Localize')  # Локализация
-    # update_obstacles()
-    # update_borders()
-    # localize()
-    # log('Location succeed!')
-    # print_field()
+    log('Localize')  # Локализация
+    update_obstacles()
+    update_borders()
+    localize()
+    log('Location succeed!')
+    print_field()
 
-    # log('Search start')  # Поиск близжайшей тумбы к стене
-    # status = False
-    # pos = (-1, -1)  # Координаты близжайшей тумбы к стене
-    # while not status:
-    #     if Data.finish:
-    #         exit(1)
-    #     log('Searching again...')
-    #     status, pos = spiral_obstacle_search()
+    log('Search start')  # Поиск близжайшей тумбы к стене
+    status = False
+    pos = (-1, -1)  # Координаты близжайшей тумбы к стене
+    while not status:
+        if Data.finish:
+            exit(1)
+        log('Searching again...')
+        status, pos = spiral_obstacle_search()
 
-    # status = False  # Определение цвета близжайшей тумбы
-    # color = -1
-    # first_run = False
-    # while (not status) or (color not in RobotConst.colors):
-    #     log("Try ride_close")
-    #     status, area = ride_close(pos, first_run)
-    #     first_run = True
-    #     if not status:
-    #         continue
-    #     log("Color detect")
-    #     status, color = detect_color(robot.getImage(), area)
-    # print('color', RobotConst.colors[color])
+    status = False  # Определение цвета близжайшей тумбы
+    color = -1
+    first_run = False
+    while (not status) or (color not in RobotConst.colors):
+        log("Try ride_close")
+        status, area = ride_close(pos, first_run)
+        first_run = True
+        if not status:
+            continue
+        log("Color detect")
+        status, color = detect_color(robot.getImage(), area)
+    print('color', RobotConst.colors[color])
 
-    # targets = find_way_outs()  # Поиск артага на тумбе, куда подъехали
-    # status = -1
-    # code = ""
-    # while status < 0:
-    #     while (get_orientation(), Data.robot_pos[0], Data.robot_pos[1]) not in targets:
-    #         path = BFS3D(targets)
-    #         if len(path) == 0:
-    #             log("NO WAY FOUND")
-    #             exit(0)
-    #         ride_path(path)
-    #     status, code = detector.detect(robot.getImage())
-    #     targets.remove((get_orientation(), Data.robot_pos[0], Data.robot_pos[1]))
+    if color != 1:
+        full_localize()
+        scan_boxes(1)
 
-    # while status > 0:  # считывание артага
-    #     if status == 1:
-    #         rotate_gyro_relative(-10)
-    #     elif status == 2:
-    #         rotate_gyro_relative(10)
-    #     sleep(100)
-    #     status, code = detector.detect(robot.getImage())
-    # if status == 0:
-    #     print('binary', code)
-    #     status, parsed_code = hamming.decode(code)
-    #     if not status:
-    #         log("ERROR PARSING", code)
-    #         exit(0)
-    #     x, y = parse_artag_coordinates(parsed_code)
-    #     print('coordinates', x, y)
-    # else:
-    #     log("Error, detector returned code", status)
-    #     exit(0)
-    # rotate_gyro_absolute(0)
+    print('coordinates', *robot_abs_pos(color))
+    robot.sleep(10)
+
+    targets = find_way_outs()  # Поиск артага на тумбе, куда подъехали
+    status = -1
+    code = ""
+    while status < 0:
+        while (get_orientation(), Data.robot_pos[0], Data.robot_pos[1]) not in targets:
+            path = BFS3D(targets)
+            if len(path) == 0:
+                log("NO WAY FOUND")
+                exit(0)
+            ride_path(path)
+        status, code = detector.detect(robot.getImage())
+        targets.remove((get_orientation(), Data.robot_pos[0], Data.robot_pos[1]))
+
+    print('found marker')
+    robot.sleep(10)
+
+    while status > 0:  # считывание артага
+        if status == 1:
+            rotate_gyro_relative(-10)
+        elif status == 2:
+            rotate_gyro_relative(10)
+        sleep(100)
+        status, code = detector.detect(robot.getImage())
+    x, y = -1, -1
+    if status == 0:
+        status, parsed_code = hamming.decode(code)
+        if not status:
+            log("ERROR PARSING", code)
+            exit(0)
+        x, y = parse_artag_coordinates(parsed_code)
+        print('marker', x, y)
+    else:
+        log("Error, detector returned code", status)
+        exit(0)
+    rotate_gyro_absolute(0)
+    if x == -1 or y == -1:
+        log("Error, coordinates not valid")
+
+    target = robot_abs_pos_to_relative(color, (x*2, y*2))
+    target = target[0], target[1]
+    log("Finish coords:", target)
+
+    while (Data.robot_pos[0], Data.robot_pos[1]) != target:
+        path = BFS3D([target])
+        if len(path) == 0:
+            log("NO WAY FOUND")
+            exit(0)
+        ride_path(path)
+
+    print('finish')
 
     log('Success!!!')
     log('Exec time:', (time() - start_time) / 1000)
+
+
+def scan_boxes(target_color):
+    center_nodes = centers_of_boxes()
+    target_list = get_near_points_from_centers(center_nodes)
+    while len(target_list) > 0:
+        path = BFS3D(target_list)
+        if len(path) == 0:
+            break
+        ride_path(path)
+        if (get_orientation(), Data.robot_pos[0], Data.robot_pos[1]) in target_list:
+            status, color = detect_color(robot.getImage(), 0)
+            if status and (color == target_color):
+                log("SCAN SUCCESS")
+                return
+            elif status:
+                box_nodes = find_way_outs()
+                for i in box_nodes:
+                    if i in target_list:
+                        target_list.remove(i)
+    log("SCAN FAIL")
+
+
+
+def full_localize():
+    log("START FULL LOCALIZE")
+    while True:
+        unknown_nodes = []
+        for i in range(Data.borders[0], Data.borders[2] + 1):
+            for j in range(Data.borders[1], Data.borders[3] + 1):
+                if Data.field[i, j] < 0:
+                    unknown_nodes.append((i, j))
+        if len(unknown_nodes) == 0:
+            break
+        path = BFS3D(unknown_nodes)
+        if len(path) == 0:
+            break
+        ride_path(path)
+    log("FULL LOCALIZE DONE")
 
 
 def robot_abs_pos(color):
@@ -944,12 +1011,17 @@ def centers_of_boxes():
     res = []
     for x in range(Data.borders[0], Data.borders[2] + 1):
         for y in range(Data.borders[1], Data.borders[3] + 1):
-            if Data.field[x][y] == Data.field[x][y + 1] == Data.field[x + 1][y] == Data.field[x + 1][y + 1] == 1:
+            if Data.field_cells[x][y] == Data.field_cells[x][y + 1] == \
+                    Data.field_cells[x + 1][y] == Data.field_cells[x + 1][y + 1] == 1:
                 res.append((x, y))
     return res
 
 
 def detect_color(image: np.ndarray, search_area):
+    status, code = detector.detect(image)
+    if search_area == 0 and status > -1:
+        return True, 1
+
     src = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     left = src[720 // 2 - 2: 720 // 2 + 3, (1280 // 2 - 160) - 2:(1280 // 2 - 160) + 3]
     right = src[720 // 2 - 2: 720 // 2 + 3, (1280 // 2 + 160) - 2:(1280 // 2 + 160) + 3]
@@ -982,8 +1054,6 @@ def get_near_points_from_centers(centers: list) -> list:
         res.add((2, centerX - 2, centerY))
         res.add((3, centerX, centerY + 2))
     return list(res)
-
-
 
 
 def find_way_outs():

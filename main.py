@@ -864,10 +864,19 @@ def main():
         full_localize()
         scan_boxes(1)
 
-    print('coordinates', *robot_abs_pos(color))
+    targets = find_way_outs()  # Поиск артага на тумбе, куда подъехали
+
+    log("DRIVE TO INT NODE")
+    int_nodes = get_int_nodes() # едем до близжайшей целой позиции
+    path = BFS3D(int_nodes)
+    if len(path) == 0:
+        log("NO WAY FOUND INT NODE")
+    ride_path(path)
+
+    robot_pos = robot_abs_pos(color)
+    print('coordinates', robot_pos[0] // 2, robot_pos[1] // 2)
     robot.sleep(10)
 
-    targets = find_way_outs()  # Поиск артага на тумбе, куда подъехали
     status = -1
     code = ""
     while status < 0:
@@ -942,6 +951,14 @@ def scan_boxes(target_color):
                         target_list.remove(i)
     log("SCAN FAIL")
 
+
+def get_int_nodes():
+    ans = []
+    for i in range(Data.borders[0], Data.borders[2] + 1):
+        for j in range(Data.borders[1], Data.borders[3] + 1):
+            if i % 2 == 1 and j % 2 == 1:
+                ans.append((i, j))
+    return ans
 
 
 def full_localize():

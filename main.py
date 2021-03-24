@@ -23,11 +23,11 @@ class RobotConst:  # константы
     lasers_on_one_node = 4  # столько лазеров проверяет один узел на пустоту; будет взято x2+1
     min_length_delta = 0.2  # каждый лазер должен проходить дальше пустого узла хотя бы на столько м
 
-    v = 0.25
-    vslow = 0.03
-    acceleration = 0.1  # points per second
+    v = 0.3
+    vslow = 0.04
+    acceleration = 0.2  # points per second
     pid_window_size = 10
-    decel_start_offset = 0.7  # расстояние до начала замедления
+    decel_start_offset = 0.8  # расстояние до начала замедления
     rotate_decel_start_offset = 25000  # расстояние до начала замедления
     maze_size = 15
 

@@ -10,7 +10,7 @@ DEBUG = False
 
 
 class RobotConst:  # константы
-    cell_size = 0.302
+    cell_size = 0.306
     exact_cell_size = 0.3
     wheel_d = 0.17999999999999999
     track = 0.29999999999999999
@@ -23,12 +23,12 @@ class RobotConst:  # константы
     lasers_on_one_node = 4  # столько лазеров проверяет один узел на пустоту; будет взято x2+1
     min_length_delta = 0.2  # каждый лазер должен проходить дальше пустого узла хотя бы на столько м
 
-    v = 0.3
+    v = 0.4
     vslow = 0.04
     acceleration = 0.2  # points per second
     pid_window_size = 10
-    decel_start_offset = 0.8  # расстояние до начала замедления
-    rotate_decel_start_offset = 25000  # расстояние до начала замедления
+    decel_start_offset = 1.2  # расстояние до начала замедления
+    rotate_decel_start_offset = 29000  # расстояние до начала замедления
     maze_size = 15
 
     hamming_length = 12
@@ -276,7 +276,7 @@ def forward_enc_simplified_while(check_func, dir=1, power=RobotConst.v):
 
 
 def forward_gyro(cm=float(RobotConst.cell_size), additional_corrections=lambda: 0.0):
-    gyro_kp = 0.00002  # П коэффиент для езды по гироскопу
+    gyro_kp = 0.000005  # П коэффиент для езды по гироскопу
     path = (cm / (pi * RobotConst.wheel_d)) * RobotConst.cpr
     Data.encL += path  # Add start encoder value
     Data.encR += path  # Add start encoder value
@@ -365,7 +365,7 @@ def rotate_gyro_absolute(angle):
         if abs(angle - getYaw()) < RobotConst.rotate_decel_start_offset or \
                 (angle <= -180000 + RobotConst.rotate_decel_start_offset and
                  abs(-angle - getYaw()) < RobotConst.rotate_decel_start_offset):
-            motors(RobotConst.vslow * sgn, RobotConst.vslow * -sgn)
+            motors(RobotConst.vslow * 2 * sgn, RobotConst.vslow * 2 * -sgn)
         else:
             motors((RobotConst.v / 3 * 2) * sgn, (RobotConst.v / 3 * 2) * -sgn)
         sleep(1)

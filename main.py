@@ -940,6 +940,15 @@ def robot_abs_pos_to_relative(color, coords):
         return RobotConst.maze_size + green[0], RobotConst.maze_size + green[1]
 
 
+def centers_of_boxes():
+    res = []
+    for x in range(Data.borders[0], Data.borders[2]):
+        for y in range(Data.borders[1], Data.borders[3]):
+            if Data.field[x][y] == Data.field[x][y + 1] == Data.field[x + 1][y] == Data.field[x + 1][y + 1] == 1:
+                res.append((x, y))
+    return res
+
+
 def detect_color(image: np.ndarray, search_area):
     src = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     left = src[720 // 2 - 2: 720 // 2 + 3, (1280 // 2 - 160) - 2:(1280 // 2 - 160) + 3]

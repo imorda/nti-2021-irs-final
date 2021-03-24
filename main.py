@@ -365,7 +365,7 @@ def rotate_gyro_absolute(angle):
         if abs(angle - getYaw()) < RobotConst.rotate_decel_start_offset or \
                 (angle <= -180000 + RobotConst.rotate_decel_start_offset and
                  abs(-angle - getYaw()) < RobotConst.rotate_decel_start_offset):
-            motors(RobotConst.vslow * 2 * sgn, RobotConst.vslow * 2 * -sgn)
+            motors(RobotConst.vslow * 1.5 * sgn, RobotConst.vslow * 1.5 * -sgn)
         else:
             motors((RobotConst.v / 3 * 2) * sgn, (RobotConst.v / 3 * 2) * -sgn)
         sleep(1)

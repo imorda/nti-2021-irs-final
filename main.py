@@ -1301,7 +1301,7 @@ def spiral_obstacle_search():
                       position[1] - cell_borders[1],
                       cell_borders[3] - position[1]) * RobotConst.exact_cell_size
             log('FOUND:', i, 'ANSWER:', ans)
-            print('distance', ans)
+            print('distance', round(ans, 1))
             return True, position
 
 

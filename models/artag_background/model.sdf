@@ -1,0 +1,14 @@
+<?xml version="1.0" ?><sdf version="1.6">
+  <model name="artag_background">
+    <static>true</static>
+    <link name="link">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://artag_background/meshes/background.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

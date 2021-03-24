@@ -10,7 +10,7 @@ DEBUG = False
 
 
 class RobotConst:  # константы
-    cell_size = 0.306
+    cell_size = 0.304
     exact_cell_size = 0.3
     wheel_d = 0.17999999999999999
     track = 0.29999999999999999

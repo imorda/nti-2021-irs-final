@@ -6,7 +6,7 @@ import time as tm
 from scripts.artag_detector import *
 
 
-DEBUG = True
+DEBUG = False
 
 
 class RobotConst:  # константы
@@ -688,11 +688,13 @@ def update_obstacles():
     log('CALC TIME:', time() - start_time)
 
 
-def ride_path(path):
+def ride_path(path, need_to_exit=lambda: False):
     for i in range(1, len(path)):
         for j in range(i, len(path)):
             if Data.field[path[j][1:]] > 0:
                 return
+        if need_to_exit():
+            return
         log(path[i - 1], '--->', path[i])
         if path[i][0] != path[i - 1][0]:
             if (path[i][0] - 1) % 4 == path[i - 1][0]:
@@ -849,10 +851,11 @@ def main():
 
     status = False  # Определение цвета близжайшей тумбы
     color = -1
+    center = (-1, -1)
     first_run = False
     while (not status) or (color not in RobotConst.colors):
         log("Try ride_close")
-        status, area = ride_close(pos, first_run)
+        status, area, center = ride_close(pos, first_run)
         first_run = True
         if not status:
             continue
@@ -862,16 +865,17 @@ def main():
 
     if color != 1:
         full_localize()
-        scan_boxes(1)
+        scan_boxes(1, center)
 
     targets = find_way_outs()  # Поиск артага на тумбе, куда подъехали
 
-    log("DRIVE TO INT NODE")
-    int_nodes = get_int_nodes() # едем до близжайшей целой позиции
-    path = BFS3D(int_nodes)
-    if len(path) == 0:
-        log("NO WAY FOUND INT NODE")
-    ride_path(path)
+    if Data.robot_pos[0] % 2 != 1 or Data.robot_pos[1] % 2 != 1:
+        log("DRIVE TO INT NODE")
+        int_nodes = get_int_nodes()  # едем до близжайшей целой позиции
+        path = BFS3D(int_nodes)
+        if len(path) == 0:
+            log("NO WAY FOUND INT NODE")
+        ride_path(path)
 
     robot_pos = robot_abs_pos(color)
     print('coordinates', robot_pos[0] // 2, robot_pos[1] // 2)
@@ -931,8 +935,10 @@ def main():
     log('Exec time:', (time() - start_time) / 1000)
 
 
-def scan_boxes(target_color):
+def scan_boxes(target_color, closest_center):
     center_nodes = centers_of_boxes()
+    if closest_center in center_nodes:
+        center_nodes.remove(closest_center)
     target_list = get_near_points_from_centers(center_nodes)
     while len(target_list) > 0:
         path = BFS3D(target_list)
@@ -974,7 +980,7 @@ def full_localize():
         path = BFS3D(unknown_nodes)
         if len(path) == 0:
             break
-        ride_path(path)
+        ride_path(path, lambda: True if Data.field[path[-1][1], path[-1][2]] > -1 else False)
     log("FULL LOCALIZE DONE")
 
 
@@ -1111,14 +1117,13 @@ def get_cell(cell: tuple) -> int:
 def find_lost_cells(cells: list):
     if len(cells) == 0:
         return True
-    nodes = []
     for i in cells:
-        nodes += [i, (i[0] - 1, i[1]), (i[0], i[1] - 1), (i[0] - 1, i[1] - 1)]
-    while Data.robot_pos not in nodes:
-        path = BFS3D(nodes)
-        if len(path) == 0:
-            return False
-        ride_path(path)
+        nodes = [i, (i[0] - 1, i[1]), (i[0], i[1] - 1), (i[0] - 1, i[1] - 1)]
+        while Data.robot_pos not in nodes:
+            path = BFS3D(nodes)
+            if len(path) == 0:
+                return False
+            ride_path(path, lambda: True if Data.field_cells[i[0]][i[1]] > -1 else False)
     return True
 
 
@@ -1190,7 +1195,7 @@ def ride_close(pos: tuple, is_first_run: bool):
                 lost_cells.append((px - 1, py))
         status = find_lost_cells(lost_cells)
         if not status:
-            return False, -1
+            return False, -1, (-1, -1)
     target_list = []
 
     target_dict = {}
@@ -1259,13 +1264,13 @@ def ride_close(pos: tuple, is_first_run: bool):
             break
 
     if len(path) == 0:
-        return False, -1
+        return False, -1, (centerX, centerY)
     ride_path(path)
 
     if (get_orientation(), Data.robot_pos[0], Data.robot_pos[1]) not in target_dict:
-        return False, -1
+        return False, -1, (centerX, centerY)
 
-    return True, target_dict[(get_orientation(), Data.robot_pos[0], Data.robot_pos[1])]
+    return True, target_dict[(get_orientation(), Data.robot_pos[0], Data.robot_pos[1])], (centerX, centerY)
 
 
 def parse_artag_coordinates(code: str):
@@ -1288,7 +1293,7 @@ def spiral_obstacle_search():
                           (position[0], position[1] - 1), (position[0] - 1, position[1] - 1)])
             if len(path) == 0:
                 continue
-            ride_path(path)
+            ride_path(path, lambda: True if Data.field_cells[position[0]][position[1]] > -1 else False)
             return False, (-1, -1)
         elif cell_type == 1:
             ans = min(position[0] - cell_borders[0],

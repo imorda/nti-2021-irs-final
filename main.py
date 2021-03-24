@@ -72,7 +72,7 @@ detector = ARTagDetector(debug=DEBUG)
 hamming = Hamming(RobotConst.hamming_length, debug=DEBUG)
 eL = lambda: Data.enc['right']
 eR = lambda: Data.enc['left']
-sF = lambda: min(Data.sensors["values"][(683 // 2) - 20:(683 // 2) + 21])
+sF = lambda: min(Data.sensors["values"][(683 // 2) - 30:(683 // 2) + 31])
 sR = lambda: Data.sensors['values'][31]
 sR90 = lambda: Data.sensors['values'][84]
 sL = lambda: Data.sensors['values'][-32]
